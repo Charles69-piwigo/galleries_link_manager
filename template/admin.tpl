@@ -181,6 +181,7 @@
   var targetInp  = document.getElementById('glm-target');
   var submitLbl  = document.getElementById('glm-submit-label');
   var cancelBtn  = document.getElementById('glm-cancel-btn');
+  var selectBtn  = document.getElementById('glm-select-btn');
 
   /* ---- helpers ---- */
   function esc(s) {
@@ -195,6 +196,7 @@
     pathEl.textContent = dir;
     loadingEl.style.display = 'block';
     listEl.innerHTML = '';
+    selectBtn.disabled = true;
 
     fetch(cfg.ajaxUrl + encodeURIComponent(dir))
       .then(function (r) { return r.json(); })
@@ -208,7 +210,13 @@
           return;
         }
 
+        // Dossier hors open_basedir : seuls ses sous-dossiers autorisés sont proposés
+        selectBtn.disabled = !!data.notice;
+
         var html = '';
+        if (data.notice) {
+          html += '<li class="glm-msg">' + esc(data.notice) + '</li>';
+        }
         if (data.parent) {
           html += '<li><a href="#" class="glm-dir-up" data-path="' + esc(data.parent) + '">&#x2191; ..</a></li>';
         }
@@ -247,7 +255,7 @@
   document.getElementById('glm-browse-btn').addEventListener('click', openBrowser);
   document.getElementById('glm-close-btn').addEventListener('click', closeBrowser);
   document.getElementById('glm-cancel2-btn').addEventListener('click', closeBrowser);
-  document.getElementById('glm-select-btn').addEventListener('click', function () {
+  selectBtn.addEventListener('click', function () {
     targetInp.value = currentDir;
     closeBrowser();
   });

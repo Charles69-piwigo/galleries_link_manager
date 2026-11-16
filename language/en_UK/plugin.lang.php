@@ -1,5 +1,4 @@
 <?php
-$lang['Symbolic links']          = 'Symbolic links';
 $lang['glm_title']               = 'Symbolic Link Manager';
 $lang['glm_galleries_dir']       = 'Galleries directory:';
 $lang['glm_col_name']            = 'Name';
@@ -25,6 +24,9 @@ $lang['glm_browser_select']      = 'Select this directory';
 $lang['glm_browser_loading']     = 'Loading…';
 $lang['glm_browser_empty']       = 'Empty directory';
 $lang['glm_browser_error']       = 'Error';
+$lang['glm_browser_outside_obd'] = 'This directory is outside the area allowed by the server (open_basedir).';
+$lang['glm_browser_obd_notice']  = 'This directory is outside the area allowed by the server (open_basedir). Accessible directories:';
+$lang['glm_config_root_outside_obd'] = 'The browser root directory is outside the area allowed by the server: the browser will only offer the allowed directories located below it.';
 
 // Configuration
 $lang['glm_config_title']        = 'Configuration';
@@ -44,6 +46,7 @@ $lang['glm_target_required']     = 'Target directory is required.';
 $lang['glm_target_not_found']    = 'Target directory does not exist or is not readable.';
 $lang['glm_target_not_dir']      = 'Target is not a directory.';
 $lang['glm_target_restricted']   = 'This target directory is not allowed for security reasons.';
+$lang['glm_target_outside_root'] = 'The target directory must be inside the browser root directory defined in the configuration.';
 $lang['glm_name_exists']         = 'A file or link with that name already exists.';
 $lang['glm_symlink_disabled']       = 'PHP symlink() function is disabled on this server (check disable_functions in php.ini).';
 $lang['glm_galleries_not_writable'] = 'The galleries directory is not writable by PHP.';
@@ -53,4 +56,4 @@ $lang['glm_delete_failed']       = 'Failed to delete symbolic link.';
 $lang['glm_link_created']        = 'Symbolic link created successfully.';
 $lang['glm_link_updated']        = 'Symbolic link updated successfully.';
 $lang['glm_link_deleted']        = 'Symbolic link deleted.';
-$lang['glm_usage_tip']           = 'Tip: after creating a symbolic link <code>photo_xyz</code>, go to the <strong>Synchronize</strong> tab, first run a <strong>Directories only</strong> synchronisation (to create the album), then a <strong>Directories + files</strong> synchronisation selecting <code>photo_xyz</code> with its sub-directories. Photos will appear in the album.';
+$lang['glm_usage_tip']           = 'Tip: after creating a symbolic link <code>photo_xyz</code>, go to <strong>Tools &gt; Synchronize</strong>, first run a <strong>Directories only</strong> synchronisation (to create the album), then a <strong>Directories + files</strong> synchronisation selecting <code>photo_xyz</code> with its sub-directories. Photos will appear in the album.';

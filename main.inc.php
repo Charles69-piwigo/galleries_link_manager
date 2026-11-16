@@ -5,10 +5,21 @@ Version: auto
 Description: Manage symbolic links in the Piwigo galleries directory
 Plugin URI: https://piwigo.org/ext/extension_view.php?eid=1080
 Author: Charles69
+Has Settings: webmaster
 */
 
 //============= VERSIONS ============================================
 /*
+version 1.6 - 16/11/2026 - regroupe 1.5.1 1.5.2 1.5.3
+    sécurité : page du plugin réservée au webmaster (Has Settings: webmaster)
+    retiré l'onglet "Liens symboliques" de Outils > Synchroniser
+    sécurité : la cible d'un lien doit être sous la racine de l'explorateur
+    sécurité : sous-dossiers des répertoires système refusés comme cible
+    sécurité : nom du lien validé à la suppression
+    explorateur : prise en compte d'open_basedir (message clair, dossiers
+    autorisés proposés comme points d'entrée)
+    configuration : avertissement si la racine est hors open_basedir
+
 version 1.5 - 11/05/2026
     arborescence dépliable des albums sur la page site_update (via prefilter)
 
@@ -41,7 +52,6 @@ define('GLM_ID',   basename(dirname(__FILE__)));
 define('GLM_PATH', PHPWG_PLUGINS_PATH . GLM_ID . '/');
 
 add_event_handler('init',                   'glm_init');
-add_event_handler('tabsheet_before_select', 'glm_add_tab');
 add_event_handler('loc_begin_admin_page',   'glm_inject_cat_tree');
 
 function glm_init()
@@ -57,18 +67,6 @@ function glm_init()
   {
     $conf['galleries_link_manager'] = array('browser_root' => '/');
   }
-}
-
-function glm_add_tab($sheets, $tab_id)
-{
-  if ($tab_id === 'site_update')
-  {
-    $sheets['galleries_link_manager'] = array(
-      'caption' => '<span class="icon-link"></span>' . l10n('Symbolic links'),
-      'url'     => get_root_url() . 'admin.php?page=plugin-' . GLM_ID,
-    );
-  }
-  return $sheets;
 }
 
 // +-----------------------------------------------------------------------+

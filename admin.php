@@ -2,6 +2,12 @@
 defined('GLM_PATH') or die('Hacking attempt!');
 
 // +---------------------------------------------------------------------------+
+// | Access control : webmaster only (page, actions and AJAX browser)          |
+// +---------------------------------------------------------------------------+
+
+check_status(ACCESS_WEBMASTER);
+
+// +---------------------------------------------------------------------------+
 // | Helper functions                                                          |
 // +---------------------------------------------------------------------------+
 
@@ -14,11 +20,114 @@ function glm_path_allowed($path, $browser_root)
 
 function glm_is_restricted($path)
 {
-  $restricted = array(
-    '/', '/etc', '/bin', '/sbin', '/usr', '/usr/bin', '/usr/sbin',
-    '/proc', '/sys', '/dev', '/run', '/boot', '/lib', '/lib64',
+  $path = rtrim($path, '/');
+
+  // Refusés tels quels (leurs sous-dossiers peuvent être légitimes, ex. /run/media)
+  if (in_array($path, array('', '/usr', '/run')))
+  {
+    return true;
+  }
+
+  // Refusés ainsi que tous leurs sous-dossiers
+  $restricted_trees = array(
+    '/etc', '/bin', '/sbin', '/usr/bin', '/usr/sbin',
+    '/proc', '/sys', '/dev', '/boot', '/lib', '/lib64',
   );
-  return in_array(rtrim($path, '/'), $restricted);
+  foreach ($restricted_trees as $tree)
+  {
+    if ($path === $tree || strpos($path . '/', $tree . '/') === 0)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+function glm_valid_link_name($name)
+{
+  return $name !== '.' && $name !== '..'
+    && preg_match('/^[a-zA-Z0-9_.-]+\z/', $name) === 1;
+}
+
+// Dossiers autorisés par open_basedir (tableau vide si aucune restriction)
+function glm_open_basedir_dirs()
+{
+  $obd = (string)ini_get('open_basedir');
+  if ($obd === '')
+  {
+    return array();
+  }
+  $dirs = array();
+  foreach (explode(PATH_SEPARATOR, $obd) as $d)
+  {
+    $d = trim($d);
+    if ($d === '' || $d === '.')
+    {
+      continue;
+    }
+    $real = @realpath($d);
+    $d = ($real !== false) ? $real : $d;
+    $d = rtrim(str_replace('\\', '/', $d), '/');
+    $dirs[] = ($d === '') ? '/' : $d;
+  }
+  return array_values(array_unique($dirs));
+}
+
+// Normalise un chemin absolu saisi (sans le résoudre) ; false s'il est suspect
+function glm_normalize_path($path)
+{
+  $path = str_replace('\\', '/', (string)$path);
+  if ($path === '' || $path[0] !== '/' || preg_match('#(^|/)\.\.?(/|$)#', $path))
+  {
+    return false;
+  }
+  $path = rtrim(preg_replace('#/+#', '/', $path), '/');
+  return ($path === '') ? '/' : $path;
+}
+
+// Vrai si $child est $parent ou l'un de ses sous-dossiers
+function glm_is_under($child, $parent)
+{
+  if ($parent === '/') return true;
+  return $child === $parent || strpos($child . '/', $parent . '/') === 0;
+}
+
+// Vrai si open_basedir est actif et que $path n'est dans aucun dossier autorisé
+function glm_outside_open_basedir($path, $obd_dirs)
+{
+  if (empty($obd_dirs))
+  {
+    return false;
+  }
+  foreach ($obd_dirs as $d)
+  {
+    if (glm_is_under($path, $d))
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Dossiers autorisés par open_basedir situés sous $dir et sous la racine de l'explorateur
+function glm_open_basedir_entries($dir, $obd_dirs, $browser_root)
+{
+  $entries = array();
+  foreach ($obd_dirs as $d)
+  {
+    if ($d === $dir || !glm_is_under($d, $dir) || !glm_path_allowed($d, $browser_root))
+    {
+      continue;
+    }
+    if (!@is_dir($d))
+    {
+      continue;
+    }
+    $name = ($dir === '/') ? ltrim($d, '/') : substr($d, strlen($dir) + 1);
+    $entries[] = array('name' => $name, 'path' => $d);
+  }
+  usort($entries, function($a, $b) { return strcasecmp($a['name'], $b['name']); });
+  return $entries;
 }
 
 function glm_list_symlinks($galleries_dir)
@@ -79,6 +188,38 @@ if (isset($_GET['ajax']))
 
   if ($real === false || !is_dir($real))
   {
+    // Dossier non lisible : est-ce à cause d'open_basedir ?
+    $obd_dirs = glm_open_basedir_dirs();
+    $norm     = glm_normalize_path($dir);
+
+    if ($norm !== false && glm_outside_open_basedir($norm, $obd_dirs))
+    {
+      $entries = glm_path_allowed($norm, $browser_root)
+        ? glm_open_basedir_entries($norm, $obd_dirs, $browser_root)
+        : array();
+
+      if (empty($entries))
+      {
+        echo json_encode(array('success' => false, 'error' => l10n('glm_browser_outside_obd')));
+        exit();
+      }
+
+      // Dossier ancêtre de dossiers autorisés : on propose ceux-ci comme points d'entrée
+      $parent = dirname($norm);
+      if ($norm === '/' || $norm === rtrim($browser_root, '/') || !glm_path_allowed($parent, $browser_root))
+      {
+        $parent = null;
+      }
+      echo json_encode(array(
+        'success' => true,
+        'current' => $norm,
+        'parent'  => $parent,
+        'entries' => $entries,
+        'notice'  => l10n('glm_browser_obd_notice'),
+      ));
+      exit();
+    }
+
     echo json_encode(array('success' => false, 'error' => 'Invalid directory'));
     exit();
   }
@@ -129,12 +270,6 @@ if (isset($_GET['ajax']))
   exit();
 }
 
-// +---------------------------------------------------------------------------+
-// | Access control                                                            |
-// +---------------------------------------------------------------------------+
-
-check_status(ACCESS_ADMINISTRATOR);
-
 global $conf;
 $glm_conf     = $conf['galleries_link_manager'];
 $browser_root = isset($glm_conf['browser_root']) ? $glm_conf['browser_root'] : '/';
@@ -182,6 +317,15 @@ if (!empty($page_action))
       conf_update_param('galleries_link_manager', $glm_conf, true);
       $conf['galleries_link_manager'] = $glm_conf;
       $page['infos'][] = l10n('glm_config_saved');
+
+      $obd_dirs = glm_open_basedir_dirs();
+      $norm     = glm_normalize_path($new_root);
+      if (@realpath($new_root) === false && $norm !== false
+        && glm_outside_open_basedir($norm, $obd_dirs))
+      {
+        $page['warnings'][] = l10n('glm_config_root_outside_obd')
+          . ' (open_basedir : ' . implode(PATH_SEPARATOR, $obd_dirs) . ')';
+      }
     }
   }
   elseif ($page_action === 'create' || $page_action === 'edit')
@@ -189,7 +333,7 @@ if (!empty($page_action))
     $link_name = isset($_POST['link_name']) ? trim($_POST['link_name']) : '';
     $target    = isset($_POST['target'])    ? trim($_POST['target'])    : '';
 
-    if (!preg_match('/^[a-zA-Z0-9_.-]+$/', $link_name))
+    if (!glm_valid_link_name($link_name))
     {
       $page['errors'][] = l10n('glm_invalid_link_name');
     }
@@ -215,6 +359,10 @@ if (!empty($page_action))
       elseif (glm_is_restricted($real_target))
       {
         $page['errors'][] = l10n('glm_target_restricted');
+      }
+      elseif (!glm_path_allowed($real_target, $browser_root))
+      {
+        $page['errors'][] = l10n('glm_target_outside_root');
       }
       else
       {
@@ -266,7 +414,11 @@ if (!empty($page_action))
     $link_name = isset($_POST['link_name']) ? trim($_POST['link_name']) : '';
     $link_path = $galleries_dir . '/' . $link_name;
 
-    if (!is_link($link_path))
+    if (!glm_valid_link_name($link_name))
+    {
+      $page['errors'][] = l10n('glm_invalid_link_name');
+    }
+    elseif (!is_link($link_path))
     {
       $page['errors'][] = l10n('glm_not_a_link');
     }
@@ -286,18 +438,6 @@ if (!empty($page_action))
 // +---------------------------------------------------------------------------+
 
 $symlinks = glm_list_symlinks($galleries_dir);
-
-// +---------------------------------------------------------------------------+
-// | Tabsheet                                                                  |
-// +---------------------------------------------------------------------------+
-
-include_once(PHPWG_ROOT_PATH . 'admin/include/tabsheet.class.php');
-$my_base_url = get_root_url() . 'admin.php?page=';
-
-$tabsheet = new tabsheet();
-$tabsheet->set_id('site_update');
-$tabsheet->select('galleries_link_manager');
-$tabsheet->assign();
 
 // +---------------------------------------------------------------------------+
 // | Template assignment                                                       |

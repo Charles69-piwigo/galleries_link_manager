@@ -1,5 +1,4 @@
 <?php
-$lang['Symbolic links']          = 'Liens symboliques';
 $lang['glm_title']               = 'Gestion des liens symboliques';
 $lang['glm_galleries_dir']       = 'Répertoire galleries :';
 $lang['glm_col_name']            = 'Nom';
@@ -25,6 +24,9 @@ $lang['glm_browser_select']      = 'Sélectionner ce répertoire';
 $lang['glm_browser_loading']     = 'Chargement…';
 $lang['glm_browser_empty']       = 'Répertoire vide';
 $lang['glm_browser_error']       = 'Erreur';
+$lang['glm_browser_outside_obd'] = 'Ce dossier est hors du périmètre autorisé par le serveur (open_basedir).';
+$lang['glm_browser_obd_notice']  = 'Ce dossier est hors du périmètre autorisé par le serveur (open_basedir). Dossiers accessibles :';
+$lang['glm_config_root_outside_obd'] = 'La racine de l\'explorateur est hors du périmètre autorisé par le serveur : l\'explorateur ne pourra proposer que les dossiers autorisés situés en dessous.';
 
 // Configuration
 $lang['glm_config_title']        = 'Configuration';
@@ -44,6 +46,7 @@ $lang['glm_target_required']     = 'Le répertoire cible est requis.';
 $lang['glm_target_not_found']    = 'Le répertoire cible n\'existe pas ou n\'est pas accessible.';
 $lang['glm_target_not_dir']      = 'La cible n\'est pas un répertoire.';
 $lang['glm_target_restricted']   = 'Ce répertoire cible n\'est pas autorisé pour des raisons de sécurité.';
+$lang['glm_target_outside_root'] = 'Le répertoire cible doit se trouver sous le répertoire racine de l\'explorateur défini dans la configuration.';
 $lang['glm_name_exists']         = 'Un fichier ou lien avec ce nom existe déjà.';
 $lang['glm_symlink_disabled']       = 'La fonction PHP symlink() est désactivée sur ce serveur (voir disable_functions dans php.ini).';
 $lang['glm_galleries_not_writable'] = 'Le répertoire galleries n\'est pas accessible en écriture par PHP.';
@@ -53,4 +56,4 @@ $lang['glm_delete_failed']       = 'Échec de la suppression du lien symbolique.
 $lang['glm_link_created']        = 'Lien symbolique créé avec succès.';
 $lang['glm_link_updated']        = 'Lien symbolique mis à jour avec succès.';
 $lang['glm_link_deleted']        = 'Lien symbolique supprimé.';
-$lang['glm_usage_tip']           = 'Recommandation : après avoir créé un lien symbolique <code>photo_xyz</code>, allez dans l\'onglet <strong>Synchroniser</strong>, lancez d\'abord une synchronisation <strong>Répertoires uniquement</strong> (pour créer l\'album), puis une synchronisation <strong>Répertoires + fichiers</strong> en sélectionnant <code>photo_xyz</code> avec ses sous-répertoires. Les photos apparaîtront dans l\'album.';
+$lang['glm_usage_tip']           = 'Recommandation : après avoir créé un lien symbolique <code>photo_xyz</code>, allez dans <strong>Outils &gt; Synchroniser</strong>, lancez d\'abord une synchronisation <strong>Répertoires uniquement</strong> (pour créer l\'album), puis une synchronisation <strong>Répertoires + fichiers</strong> en sélectionnant <code>photo_xyz</code> avec ses sous-répertoires. Les photos apparaîtront dans l\'album.';
